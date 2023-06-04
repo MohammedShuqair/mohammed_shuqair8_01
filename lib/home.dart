@@ -14,8 +14,20 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  @override
+  void deactivate() {
+    // TODO: implement deactivate
+    super.deactivate();
+  }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+  }
+
   FlutterMidi flutterMidi = FlutterMidi();
-  late Future<void> _future;
+  // late Future<void> _future;
   String selectedSf2 = sf2s['Flute']!;
 
   static const Map<String, String> sf2s = {
@@ -35,7 +47,11 @@ class _HomePageState extends State<HomePage> {
   Future<void> load(String asset) async {
     flutterMidi.unmute(); // Optionally Unmute
     ByteData _byte = await rootBundle.load(asset);
-    flutterMidi.prepare(sf2: _byte);
+    flutterMidi.prepare(
+      sf2: _byte,
+      name: selectedSf2.replaceAll('assets/sf2/', ''),
+    );
+    stop();
   }
 
   Future<void> change(String asset) async {
@@ -62,16 +78,16 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> loadAll() async {
-    for (String path in sf2s.values) {
-      await load(path);
-    }
-  }
+  // Future<void> loadAll() async {
+  //   for (String path in sf2s.values) {
+  //     await load(path);
+  //   }
+  // }
 
   @override
   void initState() {
     currentMusic = musics['Mine'];
-    _future = loadAll();
+    load(selectedSf2);
     super.initState();
   }
 
@@ -181,12 +197,10 @@ class _HomePageState extends State<HomePage> {
             onChanged: (value) {
               if (selectedSf2 != value) {
                 setState(() {
-                  _future = change(selectedSf2);
+                  selectedSf2 = value ?? "assets/sf2/guitars.sf2";
                 });
+                load(selectedSf2);
               }
-              setState(() {
-                selectedSf2 = value ?? "assets/sf2/guitars.sf2";
-              });
             },
           ),
           TextButton(
@@ -197,32 +211,23 @@ class _HomePageState extends State<HomePage> {
               child: const Text("Stop")),
         ],
       ),
-      body: FutureBuilder<void>(
-        future: _future,
-        builder: (BuildContext context, AsyncSnapshot<dynamic> snapshot) {
-          if (snapshot.connectionState == ConnectionState.done) {
-            return Center(
-              child: InteractivePiano(
-                highlightedNotes: [NotePosition(note: Note.C, octave: 3)],
-                naturalColor: Colors.white,
-                accidentalColor: Colors.black,
-                keyWidth: null,
-                noteRange: NoteRange.forClefs([
-                  Clef.Treble,
-                ]),
-                onNotePositionTapped: (NotePosition position) {
-                  if (isSave) {
-                    musics[name!]?.add(position.pitch);
-                  }
-                  flutterMidi.playMidiNote(midi: position.pitch);
-                  print(position.pitch);
-                },
-              ),
-            );
-          } else {
-            return const CircularProgressIndicator();
-          }
-        },
+      body: Center(
+        child: InteractivePiano(
+          highlightedNotes: [NotePosition(note: Note.C, octave: 3)],
+          naturalColor: Colors.white,
+          accidentalColor: Colors.black,
+          keyWidth: null,
+          noteRange: NoteRange.forClefs([
+            Clef.Treble,
+          ]),
+          onNotePositionTapped: (NotePosition position) {
+            if (isSave) {
+              musics[name!]?.add(position.pitch);
+            }
+            flutterMidi.playMidiNote(midi: position.pitch);
+            print(position.pitch);
+          },
+        ),
       ),
     );
   }
